@@ -226,11 +226,14 @@ async def _extract_text_from_file(file_data: bytes, file_name: str) -> list[dict
         doc.close()
         return pages_data
 
-    if ext in ("docx", "doc"):
+    if ext == "docx":
         import io
         import mammoth
-        result = mammoth.extract_raw_text(io.BytesIO(file_data))
-        return [{"content": result.value or "", "page_number": 1}]
+        try:
+            result = mammoth.extract_raw_text(io.BytesIO(file_data))
+            return [{"content": result.value or "", "page_number": 1}]
+        except Exception:
+            pass  # fall through to content_core
 
     if ext in ("txt", "md", "csv"):
         return [{"content": file_data.decode("utf-8", errors="ignore"), "page_number": 1}]

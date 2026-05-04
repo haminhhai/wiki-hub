@@ -195,7 +195,7 @@ export function WikiPageTree({
       </div>
 
       {/* Footer: link to graph */}
-      <div className="border-t border-border p-3">
+      {/* <div className="border-t border-border p-3">
         <Link
           href="/wiki/graph"
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
@@ -203,7 +203,7 @@ export function WikiPageTree({
           <span className="material-symbols-outlined text-sm">hub</span>
           Graph View
         </Link>
-      </div>
+      </div> */}
     </div>
   );
 }

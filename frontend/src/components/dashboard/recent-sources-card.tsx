@@ -21,8 +21,8 @@ export function RecentSourcesCard() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await api<{ items: Source[] }>("/api/sources?limit=5");
-        setSources(data.items || []);
+        const data = await api<Source[]>("/api/sources?limit=5");
+        setSources(data || []);
       } catch {
         setSources([]);
       } finally {

@@ -27,19 +27,8 @@ const navGroups: NavGroup[] = [
     label: "Knowledge Base",
     icon: "book_5",
     items: [
-      { label: "Documents", href: "/knowledge", icon: "files" },
-      { label: "Wiki", href: "/wiki", icon: "book_2" },
-    ],
-  },
-  {
-    id: "organization",
-    label: "Organization",
-    icon: "corporate_fare",
-    adminOnly: true,
-    items: [
-      { label: "Departments", href: "/departments", icon: "groups_3" },
-      { label: "Employees", href: "/employees", icon: "emoji_people" },
-      { label: "Roles", href: "/roles", icon: "admin_panel_settings" },
+      { label: "Documents", href: "/knowledge", icon: "description" },
+      { label: "Wiki", href: "/wiki", icon: "auto_stories" },
     ],
   },
   {
@@ -48,7 +37,18 @@ const navGroups: NavGroup[] = [
     icon: "workspaces",
     items: [
       { label: "Projects", href: "/projects", icon: "folder_special" },
-      { label: "Contacts", href: "/contacts", icon: "contact_emergency" },
+      { label: "Contacts", href: "/contacts", icon: "contacts" },
+    ],
+  },
+  {
+    id: "organization",
+    label: "Organization",
+    icon: "corporate_fare",
+    adminOnly: true,
+    items: [
+      { label: "Departments", href: "/departments", icon: "domain" },
+      { label: "Employees", href: "/employees", icon: "group" },
+      { label: "Roles", href: "/roles", icon: "manage_accounts" },
     ],
   },
   {
@@ -107,7 +107,7 @@ function NavGroupSection({
         onClick={toggle}
         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/40 transition-all duration-150"
       >
-        <span className="material-symbols-outlined text-sm">{group.icon}</span>
+        <span className="material-symbols-outlined text-base">{group.icon}</span>
         <span className="flex-1 text-left">{group.label}</span>
         <span
           className="material-symbols-outlined text-sm transition-transform duration-200"
@@ -141,7 +141,7 @@ function NavGroupSection({
                 )}
               >
                 <span
-                  className={cn("material-symbols-outlined text-base", isActive && "filled")}
+                  className={cn("material-symbols-outlined text-lg", isActive && "filled")}
                 >
                   {item.icon}
                 </span>
@@ -183,7 +183,7 @@ export function Sidebar() {
             : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
         )}
       >
-        <span className={cn("material-symbols-outlined text-base", pathname === "/" && "filled")}>
+        <span className={cn("material-symbols-outlined text-lg", pathname === "/" && "filled")}>
           dashboard
         </span>
         Dashboard

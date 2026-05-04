@@ -73,7 +73,7 @@ export default function WikiPageViewer() {
               href="/wiki/graph"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              <span className="material-symbols-outlined text-base">hub</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>hub</span>
               Graph View
             </Link>
           </div>
