@@ -24,6 +24,8 @@ from app.database.models import (
     ProjectMember,
     Source,
     SourceDepartment,
+    Skill,
+    SkillDepartment,
     WorkspaceRole,
     WORKSPACE_ROLE_HIERARCHY,
 )
@@ -146,6 +148,63 @@ def build_document_filter(user: Employee, action: str = "read"):
         return True, [user.department_id]
 
     # No permission at all — empty result
+    return True, None
+
+
+# ---------------------------------------------------------------------------
+# Global Realm: AI Skill access
+# ---------------------------------------------------------------------------
+
+async def can_access_skill(
+    db: AsyncSession,
+    user: Employee,
+    skill: Skill,
+    action: str = "read",
+) -> bool:
+    """Check if user can perform action on an AI skill.
+    
+    Logic:
+    1. Admin → True
+    2. User has skill:{action}:all → True
+    3. User has skill:{action}:own_dept →
+       a. Skill has no department (Global) → True
+       b. Skill's department matches user.department_id → True
+       c. Otherwise → False
+    4. Otherwise → False
+    """
+    if user.role == "admin":
+        return True
+
+    permissions = _get_user_permissions(user)
+
+    if f"skill:{action}:all" in permissions:
+        return True
+
+    # Skill visible if it's Global (no depts) OR user's dept is in skill's depts
+    skill_dept_ids = {sd.department_id for sd in skill.departments}
+    if not skill_dept_ids:
+        return True
+
+    return user.department_id in skill_dept_ids
+
+
+def build_skill_filter(user: Employee, action: str = "read"):
+    """Build SQLAlchemy filter clauses for listing skills.
+    Returns: (needs_filter: bool, filter_clauses: list)
+    """
+    if user.role == "admin":
+        return False, []
+
+    permissions = _get_user_permissions(user)
+
+    if f"skill:{action}:all" in permissions:
+        return False, []
+
+    if f"skill:{action}:own_dept" in permissions:
+        # Filter: skill has no department (global) OR matches user's department
+        # This will be handled in SkillService.list_skills via allowed_department_ids
+        return True, [user.department_id]
+
     return True, None
 
 

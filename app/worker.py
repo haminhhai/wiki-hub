@@ -8,9 +8,13 @@ Start with:
     arq app.worker.WorkerSettings
 """
 
+import io
 import uuid
+import zipfile
+from typing import Callable, Optional
 
-from arq.connections import RedisSettings
+from arq import cron
+from arq.connections import RedisSettings, ArqRedis, create_pool
 from loguru import logger
 
 from app.config import settings
@@ -23,6 +27,18 @@ def _get_redis_settings() -> RedisSettings:
         database=settings.redis_db,
         password=settings.redis_password or None,
     )
+
+
+# arq Redis pool (lazy init)
+_arq_pool: Optional[ArqRedis] = None
+
+
+async def get_arq_pool() -> ArqRedis:
+    """Lazy-init arq Redis connection pool."""
+    global _arq_pool
+    if _arq_pool is None:
+        _arq_pool = await create_pool(_get_redis_settings())
+    return _arq_pool
 
 
 # ---------------------------------------------------------------------------
@@ -316,6 +332,203 @@ async def reingest_file_task(ctx: dict, source_id: str, force: bool = False):
 # Worker configuration
 # ---------------------------------------------------------------------------
 
+
+async def ingest_skill_task(ctx: dict, skill_id: str, version_id: str, file_path: str, file_name: str):
+    """
+    arq task: unzip skill package from disk buffer, store in MinIO, and extract metadata.
+    """
+    import os
+    from app.database import async_session_factory
+    from app.database.models import Skill, SkillVersion
+    from app.services.storage_service import storage_service
+
+    sid = uuid.UUID(skill_id)
+    vid = uuid.UUID(version_id)
+    skill_name = file_name.rsplit(".", 1)[0]
+    
+    logger.info(f"Starting ingestion for skill: {skill_name} ({skill_id})")
+
+    async with async_session_factory() as session:
+        skill = await session.get(Skill, sid)
+        version = await session.get(SkillVersion, vid)
+        
+        if not skill or not version:
+            logger.error(f"Skill {skill_id} or Version {version_id} not found in DB")
+            return
+
+        try:
+            skill.status = "processing"
+            await session.commit()
+
+            if not os.path.exists(file_path):
+                logger.error(f"Disk buffer file not found: {file_path}")
+                skill.status = "error"
+                await session.commit()
+                return
+
+            import hashlib
+            import asyncio
+            from app.services.kb_service import _guess_content_type
+
+            # 1. Stream Hash calculation
+            sha256_hash = hashlib.sha256()
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(chunk)
+            file_hash = sha256_hash.hexdigest()
+
+            # 2. Unzip with streaming, security checks, and concurrent uploads
+            MAX_UNCOMPRESSED_SIZE = 10 * 1024 * 1024  # 10 MB
+            MAX_FILE_COUNT = 100
+
+            total_size = 0
+            file_count = 0
+            readme_content = None
+
+            upload_tasks = []
+            semaphore = asyncio.Semaphore(10)
+
+            async def _upload_worker(zf_path, member_name, obj_name, file_size):
+                async with semaphore:
+                    # Open a fresh ZipFile instance in the thread to avoid GIL lock contention
+                    with zipfile.ZipFile(zf_path) as local_zf:
+                        with local_zf.open(member_name) as f_stream:
+                            await storage_service.upload_stream_async(
+                                obj_name, f_stream, file_size, _guess_content_type(member_name)
+                            )
+
+            with zipfile.ZipFile(file_path) as zf:
+                for member in zf.infolist():
+                    if member.is_dir():
+                        continue
+                    
+                    filename = member.filename
+                    
+                    # [Security] Zip Slip check
+                    if filename.startswith("/") or filename.startswith("\\") or "../" in filename or "..\\" in filename:
+                        raise ValueError(f"Security risk: Zip Slip detected in {filename}")
+                        
+                    # [Security] File count check
+                    file_count += 1
+                    if file_count > MAX_FILE_COUNT:
+                        raise ValueError(f"Too many files (exceeds {MAX_FILE_COUNT})")
+                        
+                    # [Security] Zip Bomb check
+                    total_size += member.file_size
+                    if total_size > MAX_UNCOMPRESSED_SIZE:
+                        raise ValueError(f"Uncompressed size too large (exceeds 10MB)")
+
+                    object_name = f"skills/{skill_id}/versions/{version.version_number}/content/{filename}"
+                    target_readme = f"{skill_name}/SKILL.md".lower()
+
+                    if filename.lower() == target_readme or filename.lower().endswith("/skill.md"):
+                        with zf.open(member) as f:
+                            content = f.read()
+                            readme_content = content.decode("utf-8", errors="ignore")
+                            logger.info(f"Found SKILL.md in {filename}")
+                        
+                        storage_service.upload_file(
+                            object_name=object_name,
+                            data=content,
+                            content_type=_guess_content_type(filename)
+                        )
+                    else:
+                        upload_tasks.append(
+                            _upload_worker(file_path, filename, object_name, member.file_size)
+                        )
+
+            if upload_tasks:
+                await asyncio.gather(*upload_tasks)
+
+            # 3. Update DB with extracted metadata
+            if readme_content:
+                skill.description = readme_content
+                version.readme = readme_content
+            
+            skill.version_hash = file_hash
+            skill.current_version = version.version_number
+            skill.storage_path = f"skills/{skill_id}/versions/{version.version_number}/content/"
+            skill.status = "active"
+            
+            version.version_hash = file_hash
+            version.storage_path = skill.storage_path
+            
+            await session.commit()
+            logger.success(f"Skill {skill_name} version {version.version_number} processed successfully")
+
+        except Exception as e:
+            logger.exception(f"Failed to process skill {skill_name}: {e}")
+            skill.status = "error"
+            await session.commit()
+        finally:
+            # Clean up disk buffer
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    logger.debug(f"Cleaned up disk buffer: {file_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete temp file {file_path}: {e}")
+
+
+async def delete_skill_task(ctx: dict, skill_id: str):
+    """
+    arq task: delete skill files from MinIO and remove from DB.
+    """
+    from app.database import async_session_factory
+    from app.database.models import Skill
+    from app.services.storage_service import storage_service
+
+    sid = uuid.UUID(skill_id)
+    
+    logger.info(f"Starting deletion task for skill: {skill_id}")
+
+    async with async_session_factory() as session:
+        skill = await session.get(Skill, sid)
+        if not skill:
+            logger.warning(f"Skill {skill_id} already deleted or not found")
+            return
+
+        try:
+            # 1. Delete files from MinIO (prefix: skills/{skill_id}/)
+            prefix = f"skills/{skill_id}/"
+            storage_service.delete_prefix(prefix)
+            
+            # 2. Delete skill from DB (cascades to SkillVersion if configured, 
+            # but let's be explicit if needed or trust the model relationship)
+            await session.delete(skill)
+            await session.commit()
+            
+            logger.success(f"Skill {skill_id} and all assets deleted successfully")
+
+        except Exception as e:
+            logger.exception(f"Failed to delete skill {skill_id}: {e}")
+            raise
+
+
+async def cleanup_temp_uploads_cron(ctx: dict):
+    """
+    Cronjob: Quét và dọn các file rác trong temp_uploads do server crash để lại (cũ hơn 1 giờ).
+    """
+    import os
+    import time
+    
+    temp_dir = "temp_uploads"
+    if not os.path.exists(temp_dir):
+        return
+        
+    cutoff_time = time.time() - 3600  # 1 hour ago
+    
+    for filename in os.listdir(temp_dir):
+        file_path = os.path.join(temp_dir, filename)
+        if os.path.isfile(file_path):
+            if os.path.getmtime(file_path) < cutoff_time:
+                try:
+                    os.remove(file_path)
+                    logger.info(f"Cronjob: Cleaned up orphaned temp file {filename}")
+                except Exception as e:
+                    logger.debug(f"Cronjob: Failed to clean {filename}: {e}")
+
+
 class WorkerSettings:
     """arq worker configuration."""
 
@@ -334,3 +547,28 @@ class WorkerSettings:
     @staticmethod
     async def on_shutdown(ctx: dict):
         logger.info("arq worker shutting down...")
+
+
+class SkillWorkerSettings:
+    """arq worker configuration dedicated to Skills."""
+
+    functions = [ingest_skill_task, delete_skill_task]
+    queue_name = "skills_queue"
+    redis_settings = _get_redis_settings()
+    max_jobs = settings.worker_max_jobs
+    job_timeout = settings.worker_job_timeout
+    max_tries = 3
+    retry_delay = 10
+    health_check_interval = 30
+    
+    cron_jobs = [
+        cron(cleanup_temp_uploads_cron, minute=0)
+    ]
+
+    @staticmethod
+    async def on_startup(ctx: dict):
+        logger.info("arq skills worker started — listening for skill jobs...")
+
+    @staticmethod
+    async def on_shutdown(ctx: dict):
+        logger.info("arq skills worker shutting down...")
