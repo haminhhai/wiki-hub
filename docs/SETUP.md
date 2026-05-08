@@ -70,7 +70,9 @@ This starts all containers:
 
 Workers start only after `arkon_api` passes its health check, so there is no race condition on startup.
 
-> **Important:** always pass `--env-file .env.docker` explicitly. Without it, Docker Compose falls back to `.env` (your local dev config), which may have different credentials and will cause MinIO `SignatureDoesNotMatch` or similar errors.
+> **Important:** always pass `--env-file .env.docker` explicitly — both for `build` and `up`. Without it, Docker Compose falls back to `.env` (your local dev config). This causes two classes of errors:
+> - MinIO `SignatureDoesNotMatch` — credentials mismatch
+> - Frontend still calls `localhost:5055` — `NEXT_PUBLIC_API_URL` is a **build-time** variable baked into the JS bundle by Next.js. Changing `.env.docker` and restarting the container has no effect; you must rebuild the image with the correct `--env-file`.
 
 ### 3. First login
 
