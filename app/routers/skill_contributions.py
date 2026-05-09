@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.database.models import (
     Employee,
+    Skill,
     SkillContribution,
     SkillContributionStatus,
     SkillVersion,
@@ -97,6 +98,12 @@ async def create_skill_contribution(
     if user.role != "admin" and "skill:create:all" not in perms:
         if "skill:create:own_dept" not in perms:
             raise HTTPException(403, "Permission required: skill:create")
+
+    if req.skill_id:
+        base_skill = await db.get(Skill, req.skill_id)
+        if base_skill and base_skill.is_system:
+            raise HTTPException(403, "System skills cannot be modified via contributions")
+
     contribution = await SkillService.create_contribution(
         db, req.skill_id, req.base_version, user.id, req.title, req.scope_type, req.scope_ids
     )

@@ -72,6 +72,13 @@ async def lifespan(app: FastAPI):
         # Seed default admin if no admin exists yet
         await seed_default_admin()
 
+        # Seed built-in skills (idempotent — no-op if already up to date)
+        try:
+            from app.scripts.seed_skills import seed_builtin_skills
+            await seed_builtin_skills()
+        except Exception as e:
+            logger.warning(f"Could not seed built-in skills: {e}")
+
         # Warn if sensitive defaults are unchanged
         if settings.secret_key == "change-me-to-a-random-secret-string":
             logger.warning("⚠️  SECRET_KEY is set to the default value — change it before deploying to production!")

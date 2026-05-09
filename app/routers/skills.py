@@ -23,6 +23,12 @@ from app.services.skill_service import SkillService
 
 router = APIRouter()
 
+
+def _assert_not_system(skill: Skill) -> None:
+    if skill.is_system:
+        raise HTTPException(403, "System skills are read-only and cannot be modified or deleted")
+
+
 # --- Pydantic Models ---
 
 class SkillResponse(BaseModel):
@@ -36,6 +42,7 @@ class SkillResponse(BaseModel):
     status: str
     scope_type: str = "global"
     scope_id: Optional[uuid.UUID] = None
+    is_system: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -141,6 +148,7 @@ async def reupload_skill(
     skill = await SkillService.get_skill(db, slug)
     if not await can_access_skill(db, user, skill, "create"):
         raise HTTPException(status_code=403, detail="Access denied")
+    _assert_not_system(skill)
 
     if user.role != "admin":
         # Create contribution instead of direct update
@@ -436,6 +444,7 @@ async def set_latest_version(
     skill = await SkillService.get_skill(db, slug)
     if not await can_access_skill(db, user, skill, "edit"):
         raise HTTPException(status_code=403, detail="Access denied")
+    _assert_not_system(skill)
 
     skill = await SkillService.set_latest_version(db, slug, version)
     return {"message": f"Version {version} set as latest", "current_version": skill.current_version}
@@ -451,6 +460,7 @@ async def delete_skill(
     skill = await SkillService.get_skill(db, slug)
     if not await can_access_skill(db, user, skill, "delete"):
         raise HTTPException(status_code=403, detail="Access denied")
+    _assert_not_system(skill)
 
     await SkillService.delete_skill(db, slug)
     return {"message": "Skill marked for deletion"}
@@ -467,6 +477,7 @@ async def update_skill(
     skill = await SkillService.get_skill(db, slug)
     if not await can_access_skill(db, user, skill, "edit"):
         raise HTTPException(status_code=403, detail="Access denied")
+    _assert_not_system(skill)
 
     # Scope validation for new department/scope
     perms = _get_user_permissions(user)

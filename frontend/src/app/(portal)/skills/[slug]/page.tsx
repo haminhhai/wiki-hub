@@ -256,18 +256,18 @@ export default function SkillDetailPage() {
 
         <div className="lg:col-span-1 space-y-6">
           <div className="flex items-center justify-end w-full gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
-            {canAccess("skill", "create") && (
+            {!skill.is_system && canAccess("skill", "create") && (
               <>
                 <div>
-                  <ContributeDialog 
-                    skillId={skill.id} 
-                    skillName={skill.name} 
-                    versions={versions} 
+                  <ContributeDialog
+                    skillId={skill.id}
+                    skillName={skill.name}
+                    versions={versions}
                     onContributionCreated={(id) => setActiveContributionId(id)}
                   />
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="h-9 px-3 gap-2 font-bold uppercase tracking-wider border-primary/20 hover:bg-primary/5 transition-all whitespace-nowrap"
                   onClick={() => fileInputRef.current?.click()}
@@ -279,19 +279,19 @@ export default function SkillDetailPage() {
                   </span>
                   <span className="text-[10px]">ZIP</span>
                 </Button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
                   accept=".zip"
                   onChange={handleZipUpload}
                 />
               </>
             )}
-            {canAccess("skill", "delete") && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
+            {!skill.is_system && canAccess("skill", "delete") && (
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={handleDelete}
                 className="h-9 w-9 p-0 transition-all shrink-0"
                 title="Delete Skill"
@@ -346,7 +346,7 @@ export default function SkillDetailPage() {
                   </SelectContent>
                 </Select>
 
-                  {canAccess("skill", "edit") && viewingVersion !== skill.current_version && (
+                  {!skill.is_system && canAccess("skill", "edit") && viewingVersion !== skill.current_version && (
                     <Button 
                       className="w-full bg-primary text-primary-foreground shadow-sahara font-bold text-[11px] uppercase tracking-wider h-10 animate-in fade-in slide-in-from-top-1"
                       onClick={handleSetLatest}

@@ -639,6 +639,10 @@ class Skill(Base):
         server_default="active",
         nullable=False,
     )
+    is_system: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, server_default="false",
+        comment="True for skills seeded from source code. Immutable via API.",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

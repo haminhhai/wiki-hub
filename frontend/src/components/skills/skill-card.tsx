@@ -17,6 +17,7 @@ export type Skill = {
   status: string;
   scope_type: string;
   scope_id: string | null;
+  is_system: boolean;
   updated_at: string;
 };
 

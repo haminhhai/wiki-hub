@@ -148,13 +148,19 @@ export function SkillTable({
                       <div className="w-6 h-6 rounded-md bg-secondary/40 flex items-center justify-center shrink-0 transition-colors group-hover:bg-secondary/60">
                         <span className="material-symbols-outlined text-muted-foreground/40 text-[16px] group-hover:scale-110 transition-transform duration-300">auto_awesome</span>
                       </div>
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <span
                           className="text-sm font-medium text-foreground truncate max-w-[400px] group-hover:text-primary transition-colors font-manrope cursor-pointer hover:underline underline-offset-4 decoration-primary/30"
                           onClick={() => onClick(skill.slug)}
                         >
                           {skill.name}
                         </span>
+                        {skill.is_system && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20 shrink-0">
+                            <span className="material-symbols-outlined text-[11px]">lock</span>
+                            System
+                          </span>
+                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -218,7 +224,7 @@ export function SkillTable({
 
                   {/* Actions */}
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    {(canAccess("skill", "edit") || canAccess("skill", "delete")) && (
+                    {!skill.is_system && (canAccess("skill", "edit") || canAccess("skill", "delete")) && (
                       <DropdownMenu>
                         <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-secondary text-muted-foreground transition-colors focus:outline-none">
                           <span className="material-symbols-outlined text-lg">more_vert</span>
