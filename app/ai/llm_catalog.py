@@ -93,18 +93,38 @@ LLM_CATALOG: dict[str, LLMModelSpec] = {
         cost_per_1m_output_tokens=10.0,
         notes="High-context Gemini. Strong on long-doc reasoning.",
     ),
-    "google/gemini-3.1-flash": LLMModelSpec(
-        id="google/gemini-3.1-flash",
+    "google/gemini-3-flash-preview": LLMModelSpec(
+        id="google/gemini-3-flash-preview",
         provider="google",
-        model_id="gemini-3.1-flash",
-        context_window_tokens=1_000_000,
-        max_output_tokens=8_192,
+        model_id="gemini-3-flash-preview",
+        context_window_tokens=1_048_576,
+        max_output_tokens=65_536,
         supports_tools=True,
         supports_vision=True,
-        label="Gemini 3.1 Flash (1M)",
-        cost_per_1m_input_tokens=0.075,
-        cost_per_1m_output_tokens=0.30,
-        notes="Cheapest 1M-context option. Great for bulk extraction.",
+        label="Gemini 3 Flash Preview (1M)",
+        cost_per_1m_input_tokens=None,
+        cost_per_1m_output_tokens=None,
+        notes=(
+            "Preview model. Strongest multimodal + agentic Flash so far. "
+            "Supports thinking and computer use. Pricing not yet published."
+        ),
+    ),
+    "google/gemini-3.1-flash-lite": LLMModelSpec(
+        id="google/gemini-3.1-flash-lite",
+        provider="google",
+        model_id="gemini-3.1-flash-lite",
+        context_window_tokens=1_048_576,
+        max_output_tokens=65_536,
+        supports_tools=True,
+        supports_vision=True,
+        label="Gemini 3.1 Flash-Lite (1M)",
+        cost_per_1m_input_tokens=0.25,
+        cost_per_1m_output_tokens=1.50,  # includes thinking tokens
+        notes=(
+            "Most cost-efficient 1M-context Gemini. Optimized for high-volume "
+            "agentic tasks, translation, simple extraction. Supports thinking. "
+            "Audio input charged at $0.50/1M."
+        ),
     ),
     "google/gemini-2.5-pro": LLMModelSpec(
         id="google/gemini-2.5-pro",
