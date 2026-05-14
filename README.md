@@ -150,11 +150,11 @@ Add this to `claude_desktop_config.json` and restart Claude Desktop. The employe
 
 ## License
 
-Arkon is licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0).
+Arkon is licensed under the [PolyForm Internal Use License 1.0.0](https://polyformproject.org/licenses/internal-use/1.0.0).
 
-Free to use for internal tooling, research, personal projects, and non-profit use.
+Free to use for your organization's internal business operations. You may not offer Arkon as a service to third parties.
 
-**Need a commercial license or custom integration?** We help organizations integrate Claude, custom AI agents, and MCP servers into their existing infrastructure - from connecting to internal databases and legacy systems to building purpose-built agents for specific business processes.
+**Need a custom integration or enterprise support?** We help organizations integrate Claude, custom AI agents, and MCP servers into their existing infrastructure - from connecting to internal databases and legacy systems to building purpose-built agents for specific business processes.
 
 [Get in touch →](https://bitsness.vn)
 
