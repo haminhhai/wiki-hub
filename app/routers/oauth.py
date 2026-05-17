@@ -94,6 +94,9 @@ def _login_form(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arkon — Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{
@@ -101,92 +104,123 @@ def _login_form(
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #0f1117;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #e2e8f0;
+      background: #faf5ee;
+      font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+      color: #3a302a;
     }}
-    .card {{
+    .wrap {{
       width: 100%;
-      max-width: 380px;
-      background: #1a1d27;
-      border: 1px solid #2d3148;
-      border-radius: 12px;
-      padding: 40px 36px;
+      max-width: 420px;
+      padding: 0 24px;
     }}
-    .logo {{
-      font-size: 22px;
-      font-weight: 700;
-      color: #818cf8;
+    .brand {{
+      text-align: center;
+      margin-bottom: 32px;
+    }}
+    .brand h1 {{
+      font-family: 'EB Garamond', ui-serif, Georgia, serif;
+      font-size: 48px;
+      font-weight: 400;
+      color: #3a302a;
+      line-height: 1;
       margin-bottom: 6px;
     }}
-    .subtitle {{
+    .brand p {{
       font-size: 13px;
-      color: #64748b;
-      margin-bottom: 28px;
+      color: #78706a;
+    }}
+    .card {{
+      background: #f6f0e8;
+      border: 1px solid #e5ddd2;
+      border-radius: 14px;
+      padding: 36px 32px;
+      box-shadow: 0 2px 12px rgba(58,48,42,0.06);
+    }}
+    .card h2 {{
+      font-size: 22px;
+      font-weight: 500;
+      color: #3a302a;
+      margin-bottom: 24px;
     }}
     label {{
       display: block;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
-      color: #94a3b8;
+      color: #605850;
       margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
     }}
     input[type=email], input[type=password] {{
       width: 100%;
       padding: 10px 14px;
-      background: #0f1117;
-      border: 1px solid #2d3148;
+      background: #faf5ee;
+      border: 1px solid #d8d0c6;
       border-radius: 8px;
-      color: #e2e8f0;
+      color: #3a302a;
+      font-family: 'Manrope', sans-serif;
       font-size: 14px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
       outline: none;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }}
-    input:focus {{ border-color: #818cf8; }}
+    input:focus {{
+      border-color: #c2652a;
+      box-shadow: 0 0 0 3px rgba(194,101,42,0.12);
+    }}
     .error {{
-      background: #3b1219;
-      border: 1px solid #7f1d1d;
-      color: #fca5a5;
-      border-radius: 6px;
-      padding: 10px 12px;
+      background: #fdf0ea;
+      border: 1px solid #e8b49a;
+      color: #9b3e12;
+      border-radius: 8px;
+      padding: 10px 14px;
       font-size: 13px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }}
     button {{
       width: 100%;
       padding: 11px;
-      background: #818cf8;
+      background: #c2652a;
       border: none;
       border-radius: 8px;
       color: #fff;
+      font-family: 'Manrope', sans-serif;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.15s;
+      margin-top: 4px;
     }}
-    button:hover {{ background: #6366f1; }}
+    button:hover {{ background: #a8521f; }}
+    .footer {{
+      text-align: center;
+      font-size: 12px;
+      color: #a09890;
+      margin-top: 20px;
+    }}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo">Arkon</div>
-    <div class="subtitle">Sign in to connect Claude Desktop</div>
-    {error_html}
-    <form method="post">
-      <input type="hidden" name="client_id" value="{client_id}">
-      <input type="hidden" name="redirect_uri" value="{redirect_uri}">
-      <input type="hidden" name="state" value="{state}">
-      <input type="hidden" name="code_challenge" value="{code_challenge}">
-      <input type="hidden" name="code_challenge_method" value="{code_challenge_method}">
-      <label for="email">Email</label>
-      <input id="email" type="email" name="email" required autofocus>
-      <label for="password">Password</label>
-      <input id="password" type="password" name="password" required>
-      <button type="submit">Sign in</button>
-    </form>
+  <div class="wrap">
+    <div class="brand">
+      <h1>Arkon</h1>
+      <p>Enterprise AI Control Center</p>
+    </div>
+    <div class="card">
+      <h2>Sign in</h2>
+      {error_html}
+      <form method="post">
+        <input type="hidden" name="client_id" value="{client_id}">
+        <input type="hidden" name="redirect_uri" value="{redirect_uri}">
+        <input type="hidden" name="state" value="{state}">
+        <input type="hidden" name="code_challenge" value="{code_challenge}">
+        <input type="hidden" name="code_challenge_method" value="{code_challenge_method}">
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" placeholder="admin@arkon.local" required autofocus>
+        <label for="password">Password</label>
+        <input id="password" type="password" name="password" placeholder="Enter password" required>
+        <button type="submit">Sign in</button>
+      </form>
+    </div>
+    <p class="footer">Arkon v0.1 — On-Premise Deployment</p>
   </div>
 </body>
 </html>"""
